@@ -1,0 +1,2 @@
+# TV-Relay-PyQt5
+This is a python video streaming program which runs on a cheap single board computer (developed primarily on the orange pi one) but which also uses the GPIO's to detect an IR remote in order to send the commands to another device which will relay them. The use case of this is that you have 1 satellite tv source which is then broadcast over the local network and can then be used anywhere in the house as if the satellite box was there. 
