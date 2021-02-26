@@ -216,12 +216,13 @@ class Ui_video_screen(QWidget):
         self.resize(self.width, self.height)
         
         #QtCore.QTimer.singleShot(500, self.initUI)
-        self.initUI()
+        self.initUI()        
         
         self.q_core = multiprocessing.Queue(maxsize = 1)
-        #self.vid_core = multiprocessing.Process(target = self.start_vid)
+        self.vid_core = multiprocessing.Process(target = self.start_vid)
+        
         #self.vid_core.start()
-        self.start_vid() #current
+        #self.start_vid() #current
         #=================================================
         # Current issue: the UI is being created after mpv starts, as mpv has no where to generate it isn't formed and neither is the ui
         #                   the UI is inly spawned when this function exits and as such the start_vid() function needs to be called after 
@@ -283,6 +284,9 @@ class Ui_video_screen(QWidget):
         self.button_navigator = 1
         self.return_button.setDefault(True) #test but set focus to button2      
         
+        self.video_widget.setAttribute(Qt.WA_DontCreateNativeAncestors)
+        self.video_widget.setAttribute(Qt.WA_NativeWindow)
+        
         print("UI Created")  #
         
         #self.button_widget.hide()
@@ -292,23 +296,25 @@ class Ui_video_screen(QWidget):
                             # note not the same queue as thread queue.
                             #option 2: stop mpv running in its own thread using start_event_thread=False and _loop but not sure how to shut off loop. think multicore the best option 
         print("starting video")
-        self.video_widget.setAttribute(Qt.WA_DontCreateNativeAncestors)
-        self.video_widget.setAttribute(Qt.WA_NativeWindow)
+        print("window id = ", str(int(self.video_widget.winId())) )
+            
         self.player = mpv.MPV(
                 wid=str(int(self.video_widget.winId()))
-                , vo='x11', # You may not need this
-                #, log_handler=print
+                , vo='x11' # You may not need this
+                , log_handler=print
                 #, loglevel='debug'
-                )  
+                )
+        #--vo=opengl --hwdec=vaapi
+        #--vo=wayland --hwdec=vaapi
+        
         self.player.play(self.video_stream_address)  
         self.player.wait_until_playing()
-        self.q_core.get()
+        self.q_core.get() #method will wait here until a user inputs something into q_core meaning the video will play here
         self.player.stop()
         print("ending mpv function")
         
     def return_func(self):
         print("pressed return button")
-        #Ui_video_screen
         self.main_screen_class.link_ir() #tell the IR function to link back to the main screen (done here as init isn't run when the screen opens)
         self.q_core.put("stop player")
         print("stopping video")        
@@ -318,6 +324,7 @@ class Ui_video_screen(QWidget):
         print("pressed refresh button")
         self.q_core.put("stop player")
         time.sleep(2)
+        self.q_core.get()
         self.vid_core.start()
     
     def reboot_func(self):
